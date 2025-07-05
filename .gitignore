@@ -1,0 +1,69 @@
+# Python 字节码和缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 环境文件
+.env
+.venv
+env/
+venv/
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# YOLO 模型文件 (大文件)
+*.pt
+*.pth
+*.weights
+
+# 数据文件 (大文件)
+data/
+dataset/
+datasets/
+*.pcd
+*.bag
+
+# 输出目录
+output/
+output*/
+*_output/
+*_output*/
+evaluation_output/
+video_output/
+video_output*/
+speed_visualization_output/
+speed_visualization_output*/
+batch_speed_visualization_output/
+batch_speed_visualization_output*/
+bsm_output/
+
+# 视频文件
+*.mp4
+*.avi
+*.mkv
+
+# 压缩文件
+*.zip
+*.tar.gz
+
+# 日志和结果文件
+*.log
+*.xml
+*_results.json
+*_summary.json
+
+# 备份文件
+*copy.py
+*.bak
+
+# 临时文件
+*.tmp
+*.temp 
