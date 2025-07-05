@@ -20,7 +20,7 @@ venv/
 Thumbs.db
 
 # YOLO 模型文件 (大文件)
-*.pt
+
 *.pth
 *.weights
 
