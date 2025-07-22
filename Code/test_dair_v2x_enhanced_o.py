@@ -58,9 +58,15 @@ def simplify_results_for_json(results_list: List[Dict[str, Any]]) -> List[Dict[s
             vehicle_id = dist_info['vehicle_id']
             person_id = dist_info['person_id']
             distance = dist_info['distance_xy']
+            angle = dist_info.get('angle_degrees', 0.0)
+            direction_type = dist_info.get('direction_type', 'UNKNOWN')
+            
             vehicle_distances[vehicle_id].append({
                 'person_id': person_id,
-                'distance_to_person': round(distance, 2)
+                'distance_to_person': round(distance, 2),
+                'angle_degrees': round(angle, 1),
+                'direction_type': direction_type,
+                'risk_level': 'high' if angle < 5.0 else 'medium' if angle < 15.0 else 'low'
             })
 
         # 只处理车辆检测结果
@@ -70,7 +76,7 @@ def simplify_results_for_json(results_list: List[Dict[str, Any]]) -> List[Dict[s
                     'id': det['id'],
                     'position_3d': [round(p, 2) for p in det.get('center_3d', [0, 0, 0])],
                     'speed_kmh': round(det['speed_3d_kmh'], 2) if det.get('speed_3d_kmh') is not None else None,
-                    'distances_to_persons': vehicle_distances.get(det['id'], [])
+                    'person_relationships': vehicle_distances.get(det['id'], [])
                 }
                 simplified_frame['vehicles'].append(vehicle_info)
         
@@ -250,8 +256,64 @@ class V2XEnhanced3DDetector:
         distance_xy = np.linalg.norm(center_1[:2] - center_2[:2])
         return distance_xy
     
+    def calculate_person_vehicle_angle(self, person_center_3d, vehicle_center_3d):
+        """
+        计算人车连线与垂直方向的夹角
+        
+        Args:
+            person_center_3d: 人的3D中心坐标 [x, y, z]
+            vehicle_center_3d: 车辆的3D中心坐标 [x, y, z]
+            
+        Returns:
+            angle_degrees: 与垂直方向的夹角（度）
+            direction_type: 方向类型描述
+        """
+        try:
+            # 计算人车连线向量（从车辆指向人）
+            direction_vector = np.array(person_center_3d) - np.array(vehicle_center_3d)
+            
+            # 只考虑X-Y平面的方向（忽略Z轴高度差）
+            direction_xy = direction_vector[:2]
+            
+            # 计算向量长度
+            vector_length = np.linalg.norm(direction_xy)
+            
+            if vector_length < 1e-6:  # 如果距离太近，返回0度
+                return 0.0, "OVERLAP"
+            
+            # 垂直方向向量（Y轴正方向）
+            vertical_vector = np.array([1, 0])
+            
+            # 计算夹角（使用点积公式）
+            cos_angle = np.dot(direction_xy, vertical_vector) / (vector_length * np.linalg.norm(vertical_vector))
+            
+            # 限制cos值范围，避免数值误差
+            cos_angle = np.clip(cos_angle, -1.0, 1.0)
+            
+            # 计算角度（弧度转度）
+            angle_radians = np.arccos(cos_angle)
+            angle_degrees = np.degrees(angle_radians)
+            
+            # 判断方向类型
+            if angle_degrees < 5.0:
+                direction_type = "DIRECT_APPROACH"
+            elif angle_degrees < 15.0:
+                direction_type = "BASIC_TOWARD"
+            elif angle_degrees < 45.0:
+                direction_type = "DIAGONAL_APPROACH"
+            elif angle_degrees < 75.0:
+                direction_type = "LATERAL_MOTION"
+            else:
+                direction_type = "BYPASS_MOVEMENT"
+            
+            return angle_degrees, direction_type
+            
+        except Exception as e:
+            print(f"计算人车夹角时出错: {e}")
+            return 0.0, "CALC_ERROR"
+
     def calculate_person_vehicle_distances(self, detection_results):
-        """计算人和车辆之间的距离（只使用X-Y坐标）"""
+        """计算人和车辆之间的距离（只使用X-Y坐标）和相对夹角"""
         persons = []
         vehicles = []
         
@@ -262,7 +324,7 @@ class V2XEnhanced3DDetector:
             elif result['class'] in self.vehicle_classes:
                 vehicles.append(result)
         
-        # 计算人车距离（只使用X-Y坐标）
+        # 计算人车距离和夹角
         person_vehicle_distances = []
         for person in persons:
             for vehicle in vehicles:
@@ -274,12 +336,19 @@ class V2XEnhanced3DDetector:
                     person_center = np.mean(person['corners_3D'], axis=0)
                     vehicle_center = np.mean(vehicle['corners_3D'], axis=0)
                     
+                    # 计算人车相对夹角
+                    angle_degrees, direction_type = self.calculate_person_vehicle_angle(
+                        person_center, vehicle_center
+                    )
+                    
                     person_vehicle_distances.append({
                         'person_id': person['id'],
                         'person_class': self.model.names[person['class']],
                         'vehicle_id': vehicle['id'],
                         'vehicle_class': self.model.names[vehicle['class']],
                         'distance_xy': distance_xy,  # 只使用X-Y距离
+                        'angle_degrees': angle_degrees,  # 与垂直方向的夹角
+                        'direction_type': direction_type,  # 方向类型描述
                         'person_center_xy': safe_to_list(person_center[:2]),  # 只保存X-Y坐标
                         'vehicle_center_xy': safe_to_list(vehicle_center[:2]),  # 只保存X-Y坐标
                         'person_center_3d': safe_to_list(person_center),  # 保留完整3D坐标用于其他用途
@@ -348,8 +417,7 @@ class V2XEnhanced3DDetector:
                         'dimensions_3d': safe_to_list(dimensions_3d),
                         'distance_from_origin': distance_from_origin,
                         'speed_3d_kmh': speed_3d_kmh,
-                        'filtered_points': safe_to_list(filtered_points) if len(filtered_points) > 0 else [],
-                        'yaw': 0.0  # 默认偏航角
+                        'filtered_points': safe_to_list(filtered_points) if len(filtered_points) > 0 else []
                     }
                     
                     detection_results.append(detection_result)
@@ -398,7 +466,7 @@ class V2XEnhanced3DDetector:
                 else:
                     combined_points = pts_3D if len(pts_3D) > 0 else points[:1000]  # 使用原始点云的子集
                 
-                bev_frame = self.create_bev_view(combined_points, all_corners_3D)
+                bev_frame = self.create_bev_view(combined_points, all_corners_3D, detection_results)
             except Exception as e:
                 print(f"创建BEV视图失败: {e}")
                 bev_frame = np.zeros((500, 500, 3), dtype=np.uint8)
@@ -441,6 +509,39 @@ class V2XEnhanced3DDetector:
         # 确保图像是连续的内存布局
         result_image = np.ascontiguousarray(image.copy(), dtype=np.uint8)
         
+        # 创建一个字典来存储每个对象的角度信息
+        object_angle_info = {}
+        
+        # 预处理人车距离信息，为每个对象收集相关的角度信息
+        for dist_info in person_vehicle_distances:
+            person_id = dist_info['person_id']
+            vehicle_id = dist_info['vehicle_id']
+            angle = dist_info.get('angle_degrees', 0)
+            direction_type = dist_info.get('direction_type', 'UNKNOWN')
+            distance = dist_info['distance_xy']
+            
+            # 为人员对象添加角度信息
+            if person_id not in object_angle_info:
+                object_angle_info[person_id] = []
+            object_angle_info[person_id].append({
+                'target_id': vehicle_id,
+                'target_type': 'V',
+                'angle': angle,
+                'direction': direction_type,
+                'distance': distance
+            })
+            
+            # 为车辆对象添加角度信息
+            if vehicle_id not in object_angle_info:
+                object_angle_info[vehicle_id] = []
+            object_angle_info[vehicle_id].append({
+                'target_id': person_id,
+                'target_type': 'P',
+                'angle': angle,
+                'direction': direction_type,
+                'distance': distance
+            })
+        
         # 绘制点云
         if len(pts_2D) > 0 and len(pts_3D) > 0:
             colors = assign_colors_by_depth(pts_3D)
@@ -477,7 +578,7 @@ class V2XEnhanced3DDetector:
                         top_left_front_pt = (int(np.round(top_left_front_corner[0])), 
                                            int(np.round(top_left_front_corner[1])) - 10)
                         
-                        # 构建标签文本
+                        # 构建基础标签文本
                         label_parts = [
                             f"ID:{result['id']}", 
                             result['class_name'], 
@@ -487,13 +588,32 @@ class V2XEnhanced3DDetector:
                         if result['speed_3d_kmh'] is not None:
                             label_parts.append(f"Speed:{result['speed_3d_kmh']:.1f}km/h")
                         
+                        # 添加角度信息到标签中
+                        object_id = result['id']
+                        if object_id in object_angle_info:
+                            angle_info_list = object_angle_info[object_id]
+                            if len(angle_info_list) > 0:
+                                # 取最近的一个角度信息
+                                closest_angle_info = min(angle_info_list, key=lambda x: x['distance'])
+                                angle_text = f"Angle:{closest_angle_info['angle']:.1f}°({closest_angle_info['direction']})"
+                                label_parts.append(angle_text)
+                        
                         label_text = ' '.join(label_parts)
                         
                         # 绘制带阴影的文本（完全参考v2x_speed_visualization.py）
                         cv2.putText(result_image, label_text, top_left_front_pt, 
-                                  cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 3, cv2.LINE_AA)
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 3, cv2.LINE_AA)
                         cv2.putText(result_image, label_text, top_left_front_pt, 
-                                  cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 1, cv2.LINE_AA)
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 1, cv2.LINE_AA)
+                        
+                        # 在对象上方额外显示角度信息（如果有多个关系）
+                        if object_id in object_angle_info and len(object_angle_info[object_id]) > 1:
+                            angle_details_y = top_left_front_pt[1] - 25
+                            for i, angle_info in enumerate(object_angle_info[object_id][:3]):  # 最多显示3个
+                                angle_detail_text = f"→{angle_info['target_type']}{angle_info['target_id']}:{angle_info['angle']:.1f}°"
+                                cv2.putText(result_image, angle_detail_text, 
+                                          (top_left_front_pt[0], angle_details_y - i*15), 
+                                          cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
                 else:
                     # 如果3D投影失败，绘制2D边界框
                     bbox = result.get('bbox_2d', [0, 0, 100, 100])
@@ -509,6 +629,15 @@ class V2XEnhanced3DDetector:
                     
                     if result['speed_3d_kmh'] is not None:
                         label_parts.append(f"Speed:{result['speed_3d_kmh']:.1f}km/h")
+                    
+                    # 添加角度信息
+                    object_id = result['id']
+                    if object_id in object_angle_info:
+                        angle_info_list = object_angle_info[object_id]
+                        if len(angle_info_list) > 0:
+                            closest_angle_info = min(angle_info_list, key=lambda x: x['distance'])
+                            angle_text = f"Angle:{closest_angle_info['angle']:.1f}°"
+                            label_parts.append(angle_text)
                     
                     label = ' '.join(label_parts)
                     
@@ -526,21 +655,226 @@ class V2XEnhanced3DDetector:
             except Exception as e:
                 continue
         
-        # 绘制人车距离信息
+        # 绘制人车之间的连线和距离信息
+        if person_vehicle_distances:
+            # 为每个人车配对绘制连线
+            for i, dist_info in enumerate(person_vehicle_distances):
+                try:
+                    # 获取人和车辆的3D中心点
+                    person_center_3d = np.array(dist_info['person_center_3d'])
+                    vehicle_center_3d = np.array(dist_info['vehicle_center_3d'])
+                    
+                    # 将3D中心点投影到2D图像平面
+                    person_2d, person_valid = calibration.convert_3D_to_2D(person_center_3d.reshape(1, -1))
+                    vehicle_2d, vehicle_valid = calibration.convert_3D_to_2D(vehicle_center_3d.reshape(1, -1))
+                    
+                    # 检查投影是否成功
+                    if len(person_2d) > 0 and len(vehicle_2d) > 0:
+                        person_pt = person_2d[0].astype(int)
+                        vehicle_pt = vehicle_2d[0].astype(int)
+                        
+                        # 检查点是否在图像范围内
+                        img_height, img_width = result_image.shape[:2]
+                        
+                        if (0 <= person_pt[0] < img_width and 0 <= person_pt[1] < img_height and
+                            0 <= vehicle_pt[0] < img_width and 0 <= vehicle_pt[1] < img_height):
+                            
+                            # 根据角度和距离选择连线颜色
+                            distance = dist_info['distance_xy']
+                            angle = dist_info.get('angle_degrees', 0)
+                            
+                            # 根据角度选择连线颜色 - 角度越小（越朝向）颜色越红
+                            if angle < 5.0:  # 基本垂直，车朝人开
+                                line_color = (0, 0, 255)  # 红色 - 危险
+                            elif angle < 15.0:  # 基本朝向
+                                line_color = (0, 100, 255)  # 橙红色
+                            elif angle < 45.0:  # 斜向接近
+                                line_color = (0, 255, 255)  # 黄色
+                            elif angle < 75.0:  # 侧向运动
+                                line_color = (255, 255, 0)  # 青色
+                            else:  # 绕开行驶
+                                line_color = (255, 0, 0)  # 蓝色 - 安全
+                            
+                            # 根据距离调整线条粗细
+                            if distance < 5.0:
+                                line_thickness = 4
+                            elif distance < 10.0:
+                                line_thickness = 3
+                            else:
+                                line_thickness = 2
+                            
+                            # 绘制连线
+                            cv2.line(result_image, tuple(person_pt), tuple(vehicle_pt), line_color, line_thickness)
+                            
+                            # 在连线中点位置绘制距离和角度信息
+                            mid_pt = ((person_pt[0] + vehicle_pt[0]) // 2, 
+                                     (person_pt[1] + vehicle_pt[1]) // 2)
+                            
+                            # 构建距离和角度标签 - 增大字体，更醒目
+                            distance_label = f"P{dist_info['person_id']}-V{dist_info['vehicle_id']}: {distance:.1f}m"
+                            angle_label = f"Angle: {angle:.1f}° ({dist_info.get('direction_type', 'UNKNOWN')})"
+                            
+                            # 绘制距离标签 - 增大字体
+                            text_size = cv2.getTextSize(distance_label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+                            text_w, text_h = text_size[0][0], text_size[0][1]
+                            
+                            # 计算标签位置，避免超出图像边界
+                            label_x = max(5, min(mid_pt[0] - text_w // 2, img_width - text_w - 5))
+                            label_y = max(text_h + 5, min(mid_pt[1] - 15, img_height - 40))
+                            
+                            # 绘制距离标签背景 - 增大背景
+                            cv2.rectangle(result_image, 
+                                        (label_x - 3, label_y - text_h - 3),
+                                        (label_x + text_w + 3, label_y + 3),
+                                        (0, 0, 0), -1)  # 黑色背景
+                            
+                            # 绘制距离文本 - 增大字体
+                            cv2.putText(result_image, distance_label, 
+                                      (label_x, label_y), 
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                            
+                            # 绘制角度标签 - 增大字体
+                            angle_text_size = cv2.getTextSize(angle_label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+                            angle_text_w, angle_text_h = angle_text_size[0][0], angle_text_size[0][1]
+                            
+                            angle_label_x = max(5, min(mid_pt[0] - angle_text_w // 2, img_width - angle_text_w - 5))
+                            angle_label_y = label_y + 20
+                            
+                            # 绘制角度标签背景 - 增大背景
+                            cv2.rectangle(result_image, 
+                                        (angle_label_x - 3, angle_label_y - angle_text_h - 3),
+                                        (angle_label_x + angle_text_w + 3, angle_label_y + 3),
+                                        (0, 0, 0), -1)  # 黑色背景
+                            
+                            # 根据角度选择文本颜色
+                            if angle < 5.0:
+                                angle_text_color = (0, 0, 255)  # 红色
+                            elif angle < 15.0:
+                                angle_text_color = (0, 100, 255)  # 橙红色
+                            elif angle < 45.0:
+                                angle_text_color = (0, 255, 255)  # 黄色
+                            else:
+                                angle_text_color = (255, 255, 255)  # 白色
+                            
+                            # 绘制角度文本 - 增大字体
+                            cv2.putText(result_image, angle_label, 
+                                      (angle_label_x, angle_label_y), 
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.55, angle_text_color, 2)
+                            
+                            # 在人和车辆的中心点绘制更大的圆点标记
+                            cv2.circle(result_image, tuple(person_pt), 6, (0, 255, 0), -1)  # 绿色圆点标记人
+                            cv2.circle(result_image, tuple(vehicle_pt), 6, (0, 0, 255), -1)  # 红色圆点标记车辆
+                            
+                            # 绘制更明显的方向箭头（从车辆指向人）
+                            arrow_vector = np.array(person_pt) - np.array(vehicle_pt)
+                            arrow_length = np.linalg.norm(arrow_vector)
+                            
+                            if arrow_length > 25:  # 只在距离足够时绘制箭头
+                                # 标准化箭头方向
+                                arrow_unit = arrow_vector / arrow_length
+                                # 箭头起点（距离车辆中心15像素）
+                                arrow_start = vehicle_pt + (arrow_unit * 15).astype(int)
+                                # 箭头终点（距离人中心15像素）
+                                arrow_end = person_pt - (arrow_unit * 15).astype(int)
+                                
+                                # 绘制更粗的方向箭头
+                                cv2.arrowedLine(result_image, tuple(arrow_start), tuple(arrow_end), 
+                                              line_color, 3, tipLength=0.25)
+                
+                except Exception as e:
+                    print(f"绘制人车距离连线时出错: {e}")
+                    continue
+        
+        # 在图像左上角绘制距离统计信息 - 增强显示
         if person_vehicle_distances:
             y_offset = 30
-            for i, dist_info in enumerate(person_vehicle_distances[:5]):  # 只显示前5个
-                text = f"Person{dist_info['person_id']}-Vehicle{dist_info['vehicle_id']}: {dist_info['distance_xy']:.1f}m"
-                cv2.putText(result_image, text, (10, y_offset + i*25), 
-                          cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            
+            # 绘制统计信息标题 - 增大字体
+            cv2.putText(result_image, f"Person-Vehicle Relations ({len(person_vehicle_distances)} pairs):", 
+                      (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+            y_offset += 30
+            
+            # 显示前几个距离和角度信息 - 增强显示
+            for i, dist_info in enumerate(person_vehicle_distances[:5]):  # 显示前5个
+                distance = dist_info['distance_xy']
+                angle = dist_info.get('angle_degrees', 0)
+                direction_type = dist_info.get('direction_type', 'UNKNOWN')
+                
+                # 构建显示文本 - 更详细的信息
+                distance_text = f"P{dist_info['person_id']}-V{dist_info['vehicle_id']}: {distance:.1f}m"
+                angle_text = f"   Angle: {angle:.1f}° ({direction_type})"
+                
+                # 根据角度选择文本颜色
+                if angle < 5.0:
+                    text_color = (0, 0, 255)  # 红色 - 危险
+                elif angle < 15.0:
+                    text_color = (0, 100, 255)  # 橙红色
+                elif angle < 45.0:
+                    text_color = (0, 255, 255)  # 黄色
+                elif angle < 75.0:
+                    text_color = (255, 255, 0)  # 青色
+                else:
+                    text_color = (255, 255, 255)  # 白色
+                
+                # 绘制距离信息 - 增大字体
+                cv2.putText(result_image, distance_text, (10, y_offset + i*40), 
+                          cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
+                
+                # 绘制角度信息 - 增大字体
+                cv2.putText(result_image, angle_text, (10, y_offset + i*40 + 18), 
+                          cv2.FONT_HERSHEY_SIMPLEX, 0.45, text_color, 2)
+            
+            # 如果还有更多距离对，显示省略号
+            if len(person_vehicle_distances) > 5:
+                cv2.putText(result_image, f"... {len(person_vehicle_distances)-5} more pairs", 
+                          (10, y_offset + 5*40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (128, 128, 128), 2)
+            
+            # 在右上角显示角度分类统计 - 增强显示
+            angle_stats = {
+                'Direct Approach(<5°)': 0,
+                'Basic Toward(5-15°)': 0,
+                'Diagonal Approach(15-45°)': 0,
+                'Lateral Motion(45-75°)': 0,
+                'Bypass Movement(>75°)': 0
+            }
+            
+            for dist_info in person_vehicle_distances:
+                angle = dist_info.get('angle_degrees', 0)
+                if angle < 5.0:
+                    angle_stats['Direct Approach(<5°)'] += 1
+                elif angle < 15.0:
+                    angle_stats['Basic Toward(5-15°)'] += 1
+                elif angle < 45.0:
+                    angle_stats['Diagonal Approach(15-45°)'] += 1
+                elif angle < 75.0:
+                    angle_stats['Lateral Motion(45-75°)'] += 1
+                else:
+                    angle_stats['Bypass Movement(>75°)'] += 1
+            
+            # 在右上角显示角度统计 - 增大字体
+            stats_x = result_image.shape[1] - 280
+            stats_y = 30
+            
+            cv2.putText(result_image, "Angle Distribution:", 
+                      (stats_x, stats_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            
+            stats_y += 25
+            colors = [(0, 0, 255), (0, 100, 255), (0, 255, 255), (255, 255, 0), (255, 255, 255)]
+            
+            for i, (category, count) in enumerate(angle_stats.items()):
+                if count > 0:
+                    stats_text = f"{category}: {count}"
+                    cv2.putText(result_image, stats_text, 
+                              (stats_x, stats_y + i*22), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, colors[i], 2)
         
         return result_image
 
-    def create_bev_view(self, points, all_corners_3D, max_points=5000):
+    def create_bev_view(self, points, all_corners_3D, detection_results):
         """创建鸟瞰图视图，参考v2x_speed_visualization.py的实现"""
         try:
-            if len(points) > max_points:
-                indices = np.random.choice(len(points), max_points, replace=False)
+            if len(points) > 5000:
+                indices = np.random.choice(len(points), 5000, replace=False)
                 sample_points = points[indices]
             else:
                 sample_points = points
@@ -580,8 +914,14 @@ class V2XEnhanced3DDetector:
             
             # 绘制3D边界框
             for i, corners_3D in enumerate(all_corners_3D):
-                # 使用蓝色表示预测的3D边界框
-                color = (255, 0, 0)  # 蓝色
+                # 获取对应的检测结果（如果存在）
+                detection_result = detection_results[i] if i < len(detection_results) else None
+                
+                # 根据类别选择颜色
+                if detection_result and detection_result['class'] in self.person_classes:
+                    color = (0, 255, 0)  # 绿色表示人
+                else:
+                    color = (0, 0, 255)  # 红色表示车辆
                 
                 # 只使用底面的4个点
                 bottom_indices = np.argsort(corners_3D[:, 2])[:4]
@@ -603,9 +943,108 @@ class V2XEnhanced3DDetector:
                     cv2.circle(bev_image, tuple(center), 3, color, -1)
                     
                     # 添加ID标签
-                    cv2.putText(bev_image, str(i), 
+                    if detection_result:
+                        label_text = f"ID:{detection_result['id']}"
+                    else:
+                        label_text = f"ID:{i}"
+                    
+                    cv2.putText(bev_image, label_text, 
                               tuple(center + np.array([5, -5])), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+            
+            # 绘制人车关系连线（在BEV视图中）
+            persons = [det for det in detection_results if det['class'] in self.person_classes]
+            vehicles = [det for det in detection_results if det['class'] in self.vehicle_classes]
+            
+            for person in persons:
+                for vehicle in vehicles:
+                    # 计算3D中心点
+                    person_center = np.mean(person['corners_3D'], axis=0)
+                    vehicle_center = np.mean(vehicle['corners_3D'], axis=0)
+                    
+                    # 检查是否在BEV范围内
+                    if (x_range[0] <= person_center[0] <= x_range[1] and y_range[0] <= person_center[1] <= y_range[1] and
+                        x_range[0] <= vehicle_center[0] <= x_range[1] and y_range[0] <= vehicle_center[1] <= y_range[1]):
+                        
+                        # 转换到BEV坐标
+                        person_bev = [
+                            int((person_center[0] - x_range[0]) / resolution),
+                            int(height - 1 - (person_center[1] - y_range[0]) / resolution)
+                        ]
+                        vehicle_bev = [
+                            int((vehicle_center[0] - x_range[0]) / resolution),
+                            int(height - 1 - (vehicle_center[1] - y_range[0]) / resolution)
+                        ]
+                        
+                        # 计算角度
+                        angle_degrees, direction_type = self.calculate_person_vehicle_angle(
+                            person_center, vehicle_center
+                        )
+                        
+                        # 根据角度选择连线颜色
+                        if angle_degrees < 5.0:
+                            line_color = (0, 0, 255)  # 红色
+                        elif angle_degrees < 15.0:
+                            line_color = (0, 100, 255)  # 橙红色
+                        elif angle_degrees < 45.0:
+                            line_color = (0, 255, 255)  # 黄色
+                        elif angle_degrees < 75.0:
+                            line_color = (255, 255, 0)  # 青色
+                        else:
+                            line_color = (255, 0, 0)  # 蓝色
+                        
+                        # 绘制连线
+                        cv2.line(bev_image, tuple(person_bev), tuple(vehicle_bev), line_color, 2)
+                        
+                        # 在连线中点显示角度信息
+                        mid_point = [
+                            (person_bev[0] + vehicle_bev[0]) // 2,
+                            (person_bev[1] + vehicle_bev[1]) // 2
+                        ]
+                        
+                        # 增强角度信息显示
+                        angle_text = f"{angle_degrees:.1f}°"
+                        direction_text = f"{direction_type}"
+                        
+                        # 绘制角度信息背景
+                        angle_text_size = cv2.getTextSize(angle_text, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+                        angle_text_w, angle_text_h = angle_text_size[0][0], angle_text_size[0][1]
+                        
+                        # 绘制角度标签背景
+                        cv2.rectangle(bev_image, 
+                                    (mid_point[0] - angle_text_w//2 - 2, mid_point[1] - angle_text_h - 2),
+                                    (mid_point[0] + angle_text_w//2 + 2, mid_point[1] + 2),
+                                    (0, 0, 0), -1)  # 黑色背景
+                        
+                        # 绘制角度文本
+                        cv2.putText(bev_image, angle_text, 
+                                  (mid_point[0] - angle_text_w//2, mid_point[1]), 
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+                        
+                        # 在角度文本下方显示方向类型
+                        direction_text_size = cv2.getTextSize(direction_text, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)
+                        direction_text_w, direction_text_h = direction_text_size[0][0], direction_text_size[0][1]
+                        
+                        # 绘制方向标签背景
+                        cv2.rectangle(bev_image, 
+                                    (mid_point[0] - direction_text_w//2 - 2, mid_point[1] + 5),
+                                    (mid_point[0] + direction_text_w//2 + 2, mid_point[1] + 5 + direction_text_h + 2),
+                                    (0, 0, 0), -1)  # 黑色背景
+                        
+                        # 根据角度选择方向文本颜色
+                        if angle_degrees < 5.0:
+                            direction_color = (0, 0, 255)  # 红色
+                        elif angle_degrees < 15.0:
+                            direction_color = (0, 100, 255)  # 橙红色
+                        elif angle_degrees < 45.0:
+                            direction_color = (0, 255, 255)  # 黄色
+                        else:
+                            direction_color = (255, 255, 255)  # 白色
+                        
+                        # 绘制方向文本
+                        cv2.putText(bev_image, direction_text, 
+                                  (mid_point[0] - direction_text_w//2, mid_point[1] + 5 + direction_text_h), 
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.3, direction_color, 1)
             
             # 添加网格线
             grid_spacing = int(10 / resolution)
@@ -619,6 +1058,26 @@ class V2XEnhanced3DDetector:
             cv2.circle(bev_image, (center_x, center_y), 5, (255, 255, 255), -1)
             cv2.putText(bev_image, "EGO", (center_x + 8, center_y), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            # 在BEV图像右上角添加角度图例
+            legend_x = width - 120
+            legend_y = 20
+            
+            cv2.putText(bev_image, "Angle Legend:", (legend_x, legend_y), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+            
+            legend_items = [
+                ("<5°: Direct Approach", (0, 0, 255)),
+                ("5-15°: Basic Toward", (0, 100, 255)),
+                ("15-45°: Diagonal Approach", (0, 255, 255)),
+                ("45-75°: Lateral Motion", (255, 255, 0)),
+                (">75°: Bypass Movement", (255, 0, 0))
+            ]
+            
+            for i, (text, color) in enumerate(legend_items):
+                y_pos = legend_y + 15 + i * 12
+                cv2.putText(bev_image, text, (legend_x, y_pos), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
             
             return bev_image
             
@@ -843,10 +1302,10 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="DAIR-V2X数据集增强版多视角3D检测测试")
     parser.add_argument('--infrastructure-path', type=str, 
-                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/split-infrastructure-side-test/sequence_0044",
+                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/V2X-Seq-SPD-Example/infrastructure-side",
                        help="基础设施侧数据路径")
     parser.add_argument('--vehicle-path', type=str,
-                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/split-infrastructure-side-test/sequence_0067",
+                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/V2X-Seq-SPD-Example/infrastructure-side",
                        help="车辆侧数据路径")
     parser.add_argument('--max-frames', type=int, default=1000,
                        help="每个视角最大处理帧数")
