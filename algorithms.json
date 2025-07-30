@@ -1,0 +1,478 @@
+{
+    "name": "tanway point cloud process algo table",
+    "version": "2.0.3",
+    "enabled": true,
+    "algo_list": [
+        {
+            "name": "Undistort points",
+            "desc": "Undistort points when lidar is static",
+            "param": {
+                "num_thred": 5,
+                "num_thred_neigh": 3,
+                "r_thred": 0.1,
+                "debug_using_echo": -1
+            },
+            "lidar_type": [
+            ],
+            "id": 1,
+            "enabled": false
+        },
+        {
+            "name": "Sunlight Noise",
+            "desc": "Lidar Sunlight Noise by jiajia",
+            "param": {
+                "leftReflectThreshold": 100,
+                "rightReflectThreshold": 400,
+                "filterWindowH": 5,
+                "filterWindowV": 3,
+                "validDistance": 6
+            },
+            "lidar_type": [
+                "Scope256",
+                "Scope256SmallBlind",
+                "Scope128H"
+            ],
+            "id": 2,
+            "enabled": true
+        },
+        {
+            "name": "Sunlight Noise v2",
+            "desc": "Lidar Sunlight Noise v2 by zhaotuo",
+            "param": {},
+            "lidar_type": [
+                "Scope256",
+                "Scope256SmallBlind"
+            ],
+            "id": 3,
+            "enabled": true
+        },
+        {
+            "name": "Rain Point",
+            "desc": "Lidar Rain Point",
+            "param": {
+                "validDistance": 6,
+                "reflectionThreshold": 40,
+                "intensityThreshold": 299
+            },
+            "lidar_type": [],
+            "id": 4,
+            "enabled": false
+        },
+        {
+            "name": "Under Ground Point",
+            "desc": "Filter Under Ground Point",
+            "param": {
+                "filter_ground_height": 0.87
+            },
+            "lidar_type": [],
+            "id": 5,
+            "enabled": false
+        },
+        {
+            "name": "Mirror Motion Compensation",
+            "desc": "Calculate Mirror Motion Compensation",
+            "param": {
+                "speed": 0
+            },
+            "lidar_type": [
+                "TempoA1",
+                "TempoA2",
+                "Duetto",
+                "Scope192",
+                "Tensor32"
+            ],
+            "id": 6,
+            "enabled": false
+        },
+        {
+            "name": "OutlierPoint",
+            "desc": "Filter Outlier Point",
+            "param": {
+                "thresholdMultiple": 4,
+                "minThreshold": 0.1
+            },
+            "lidar_type": [
+                "Tensor16",
+                "Tensor48",
+                "Duetto",
+                "TempoA2"
+            ],
+            "id": 7,
+            "enabled": false
+        },
+        {
+            "name": "Crosstalk Filter",
+            "desc": "Filter Crosstalk Point",
+            "param": {
+                "crosstalkPulse": 15,
+                "crosstalkDeletePulse": 7,
+                "crosstalkNoDeleteHeigh": 1
+            },
+            "lidar_type": [
+                "Duetto"
+            ],
+            "id": 8,
+            "enabled": false
+        },
+        {
+            "name": "DisturbPoint",
+            "desc": "Filter DisturbPoint",
+            "param": {
+                "disturb_filter": 0,
+                "disturb_filter2": 0,
+                "disturb_filter3": 0
+            },
+            "lidar_type": [],
+            "id": 9,
+            "enabled": false
+        },
+        {
+            "name": "bJointabc",
+            "desc": "jointabc",
+            "param": {
+                "jointabc_node1": 1,
+                "jointabc_node2": 10,
+                "jointabc_one_face": 2,
+                "jointabc_two_face": 1
+            },
+            "lidar_type": [
+                "TempoA2"
+            ],
+            "id": 10,
+            "enabled": false
+        },
+        {
+            "name": "Reflect calib",
+            "desc": "Reflect calib",
+            "param": {
+                "calib_file": ""
+            },
+            "lidar_type": [
+                "TempoA2",
+                "FocusB1"
+            ],
+            "id": 11,
+            "enabled": false
+        },
+        {
+            "name": "DragPoint",
+            "desc": "DragPoint Process",
+            "param": {
+                "angle_threshold_filtered": 4,
+                "dist_threshold_filtered": 2,
+                "angle_threshold_level_2":7,
+                "dist_threshold_level_2": 2,
+                "angle_threshold_level_1":10,
+                "dist_threshold_level_1": 2
+            },
+            "lidar_type": [
+                "FocusB1",
+                "FocusB2/B3/MP",
+                "TW360"
+            ],
+            "id": 12,
+            "enabled": true
+        },
+        {
+            "name": "Rainfog filter",
+            "desc": "Rainfog filter",
+            "param": {
+                "valid_distance_range": 10,
+                "small_blind_distance": 4,
+                "max_pulse_distance": 299,
+                "big_reflecttion": 2.66,
+                "small_blind_reflecttion": 0,
+                "rainfog_filter_range": 0
+            },
+            "lidar_type": [
+                "FocusB1",
+                "FocusB2/B3/MP",
+                "TempoA2",
+                "TempoA4",
+                "Tensor48"
+            ],
+            "id": 13,
+            "enabled": false
+        },
+        {
+            "name": "Highref filter",
+            "desc": "Highref filter",
+            "param": {
+                "ghostshadow": 0
+            },
+            "lidar_type": [
+                "TempoA2",
+                "TempoA4",
+                "FocusB1",
+                "FocusB2/B3/MP"
+            ],
+            "id": 14,
+            "enabled": true
+        },
+        {
+            "name": "SUNLIGHT_NOISE_V3",
+            "desc": "Lidar Sunlight Noise v3 by jiushi",
+            "param": {},
+            "lidar_type": [
+                "FocusB1"
+            ],
+            "id": 15,
+            "enabled": false
+        },
+        {
+            "name": "delete point",
+            "desc": "delete point",
+            "param": {},
+            "lidar_type": [
+                "FocusB1"
+            ],
+            "id": 16,
+            "enabled": false
+        },
+        {
+            "name": "Crosstalk Filter",
+            "desc": "Crosstalk Filter for scope256 by zhaotuo",
+            "param": {
+                "effect_opt": 0
+            },
+            "lidar_type": [
+                "Scope256",
+                "Scope256SmallBlind",
+                "Scope128H"
+            ],
+            "id": 17,
+            "enabled": true
+        },
+        {
+            "name": "Small Blind",
+            "desc": "Scope256 SmallBlind",
+            "param": {
+                "separate_mirror_ABC_dist": 3.0
+            },
+            "lidar_type": [
+                "Scope256SmallBlind"
+            ],
+            "id": 18,
+            "enabled": true
+        },
+        {
+            "name": "Discrete points",
+            "desc": "Discrete points filter",
+            "param": {
+                "threshold": 1
+            },
+            "lidar_type": [
+                "TempoA2",
+                "TempoA4",
+                "FocusB2/B3/MP",
+                "TW360"
+            ],
+            "id": 19,
+            "enabled": false
+        },
+        {
+            "name": "CloseRange_Noise",
+            "desc": "Close Range points filter for focusB2 by zhaotuo",
+            "param": {
+                "filter_channel_range": 7,
+                "filter_farthest_distance": 2,
+                "filter_closest_distance": 0.3,
+                "filter_distance_threshold": 5
+            },
+            "lidar_type": [
+                "TempoA4",
+                "FocusB2/B3/MP"
+            ],
+            "id": 20,
+            "enabled": false
+        },
+        {
+            "name": "Motion_Point",
+            "desc": "Binding of motion state recognition algorithm and motion layering algorithm",
+            "param": {
+                "num_thred": 5,
+                "num_thred_neigh": 3,
+                "r_thred": 0.1,
+                "debug_using_echo": -1
+            },
+            "lidar_type": [
+                "TempoA4",
+                "FocusB2/B3/MP"
+            ],
+            "id": 21,
+            "enabled": false
+        },
+        {
+            "name": "Two_Pass_Connection",
+            "desc": "Connected Domain Clustering Algorithm",
+            "param": {},
+            "lidar_type": [
+                "TempoA4",
+                "FocusB2/B3/MP"
+            ],
+            "id": 22,
+            "enabled": false
+        },
+        {
+            "name": "CloseRange_Noise_128",
+            "desc": "Close Range points filter and outlier filter for SCP128 by shifeifei",
+            "param": {
+                "CloseRange_128_mindistance": 5,
+                "CloseRange_128_minpulse": 5.5
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 23,
+            "enabled": false
+        },
+        {
+            "name": "HighRef_128",
+            "desc": "Highref filter for SCP128 by shifeifei",
+            "param": {
+                "highreferror_128_pulse": 30,
+                "highreferror_128_distance": 67
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 24,
+            "enabled": false
+        },
+        {
+            "name": "FixedNoise_128",
+            "desc": "FixedNoise filter for SCP128 by shifeifei",
+            "param": {},
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 25,
+            "enabled": false
+        },
+        {
+            "name": "LidarInterfere_128",
+            "desc": "SCP128 lidar interference filtering of the same model",
+            "param": {
+                "presencepoint": 1,
+                "nearpoint": 1,
+                "distance_thred": 10
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 26,
+            "enabled": false
+        },
+        {
+            "name": "Undistort points2",
+            "desc": "Undistort points when lidar is static",
+            "param": {
+                "num_thred": 5,
+                "num_thred_neigh": 3,
+                "r_thred": 0.1,
+                "debug_using_echo": -1
+            },
+            "lidar_type": [
+                "Scope128H",
+                "Scope128",
+                "TempoA4",
+                "FocusB2/B3/MP"
+            ],
+            "id": 27,
+            "enabled": false
+        },
+        {
+            "name": "Small Blind",
+            "desc": "SCP128 small blind",
+            "param": {
+                "separate_mirror_ABC_dist_scope128f": 2.5,
+                "separate_mirror_ABC_dist_scope128": 2.5
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 28,
+            "enabled": false
+        },
+        {
+            "name": "FILTER_POINTS_OF_INTEREST",
+            "desc": "Use roi to filter points",
+            "param": {
+                "filter_outrange_points_flag": 1,
+                "range_max_x": 170.0,
+                "range_max_y": 30.0,
+                "range_max_z": 1.0,
+                "range_min_x": 0.0,
+                "range_min_y": -30.0,
+                "range_min_z": -2.5,
+
+                "filter_closerange_points_flag": 1,
+                "close_square_max_x": 2.5,
+                "close_square_max_y": 1.0,
+                "close_square_max_z": 1.0,
+                "close_square_min_x": 0.0,
+                "close_square_min_y": -1.0,
+                "close_square_min_z": -2.5,
+                "close_circle_range": 0.0,
+
+                "filter_groundpoints_by_mirror_flag": 0,
+                "ground_height": -1.6,
+                "ground_remain_mirror": 0.0,
+
+                "boundary_txt_map_filter_flag": 0,
+                "boundary_map_min_x": -60.0,
+                "boundary_map_min_y": -50.0,
+                "map_resolution": 0.1,
+                "numCols": 1000,
+                "numRows": 2100,
+                "road_map_boundary_path": "/workspace/map/roadmap_boundary.txt"
+            },
+            "lidar_type": [],
+            "id": 32,
+            "enabled": false
+        },
+        {
+            "name": "Undistort points moving",
+            "desc": "Undistort points when lidar is moving",
+            "param": {
+                "debug_using_echo": 3,
+                "dis_redund_thred": 50
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 34,
+            "enabled": false
+        },
+        {
+            "name": "Ground Detect and filter",
+            "desc": "Ground Detect and filter",
+            "param": {
+                "filter_ground_points_flag": 1,
+                "filter_underground_points_flag": 1,
+                "filter_ground_points_threshold": 0.25,
+                "remain_pole_flag": 1,
+                "pole_range_thred": 5.0,
+                "max_pole_thred": 0.15,
+                "debug_using_echo": 3,
+                "roi_region_rad_x": 50.0,
+                "roi_region_rad_x_min": -50.0,
+                "roi_region_rad_y": 50.0,
+                "roi_region_rad_y_min": -50.0,
+                "roi_region_rad_z": 5.0,
+                "roi_region_rad_z_min": -5.0,
+                "nr_grids_coarse": 4,
+                "nr_grids_fine": 256,
+                "nr_smooth_iter": 1,
+                "sample_region_z_lower": -3.0,
+                "sample_region_z_upper": -0.75,
+                "nr_z_comp_candis": 32
+            },
+            "lidar_type": [
+                "Scope128"
+            ],
+            "id": 35,
+            "enabled": false
+        }
+    ]
+}

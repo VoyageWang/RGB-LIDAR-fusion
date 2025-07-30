@@ -1,0 +1,413 @@
+{
+    "infrastructure_view2": [
+        {
+            "frame_id": 485,
+            "timestamp": 1753847940.124346,
+            "view_name": "infrastructure_view2",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view2_23",
+                    "class_name": "car",
+                    "position_3d": [
+                        3.84,
+                        27.58,
+                        0.33
+                    ],
+                    "speed_kmh": 0.67,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view2_30",
+                            "distance_to_person": 4.23,
+                            "angle_degrees": 132.5,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_36",
+                            "distance_to_person": 4.23,
+                            "angle_degrees": 127.7,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_34",
+                            "distance_to_person": 20.41,
+                            "angle_degrees": 163.6,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 486,
+            "timestamp": 1753847940.3778026,
+            "view_name": "infrastructure_view2",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view2_23",
+                    "class_name": "car",
+                    "position_3d": [
+                        3.83,
+                        27.59,
+                        0.4
+                    ],
+                    "speed_kmh": 2.53,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view2_30",
+                            "distance_to_person": 4.2,
+                            "angle_degrees": 132.1,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_36",
+                            "distance_to_person": 4.26,
+                            "angle_degrees": 127.3,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_34",
+                            "distance_to_person": 20.41,
+                            "angle_degrees": 163.8,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 487,
+            "timestamp": 1753847940.7121782,
+            "view_name": "infrastructure_view2",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view2_23",
+                    "class_name": "car",
+                    "position_3d": [
+                        3.83,
+                        27.56,
+                        0.33
+                    ],
+                    "speed_kmh": 2.7,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view2_30",
+                            "distance_to_person": 4.25,
+                            "angle_degrees": 133.3,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_36",
+                            "distance_to_person": 4.33,
+                            "angle_degrees": 127.7,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_34",
+                            "distance_to_person": 20.44,
+                            "angle_degrees": 163.7,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_3",
+                            "distance_to_person": 21.05,
+                            "angle_degrees": 158.4,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 488,
+            "timestamp": 1753847941.1013863,
+            "view_name": "infrastructure_view2",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view2_23",
+                    "class_name": "car",
+                    "position_3d": [
+                        3.83,
+                        27.55,
+                        0.33
+                    ],
+                    "speed_kmh": 0.33,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view2_30",
+                            "distance_to_person": 4.23,
+                            "angle_degrees": 133.6,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_36",
+                            "distance_to_person": 4.3,
+                            "angle_degrees": 126.6,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_3",
+                            "distance_to_person": 21.04,
+                            "angle_degrees": 158.4,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 489,
+            "timestamp": 1753847941.4206264,
+            "view_name": "infrastructure_view2",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view2_23",
+                    "class_name": "car",
+                    "position_3d": [
+                        3.93,
+                        27.51,
+                        0.4
+                    ],
+                    "speed_kmh": 4.49,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view2_30",
+                            "distance_to_person": 4.32,
+                            "angle_degrees": 131.7,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_36",
+                            "distance_to_person": 4.3,
+                            "angle_degrees": 127.7,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_3",
+                            "distance_to_person": 21.14,
+                            "angle_degrees": 158.2,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view2_34",
+                            "distance_to_person": 20.52,
+                            "angle_degrees": 163.5,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "infrastructure_view1": [
+        {
+            "frame_id": 473,
+            "timestamp": 1753847939.6483462,
+            "view_name": "infrastructure_view1",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view1_20",
+                    "class_name": "car",
+                    "position_3d": [
+                        -3.97,
+                        15.34,
+                        -2.59
+                    ],
+                    "speed_kmh": 0.88,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view1_6",
+                            "distance_to_person": 4.35,
+                            "angle_degrees": 2.6,
+                            "direction_type": "DIRECT_APPROACH",
+                            "risk_level": "high"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_37",
+                            "distance_to_person": 3.52,
+                            "angle_degrees": 75.6,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_31",
+                            "distance_to_person": 3.8,
+                            "angle_degrees": 83.6,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 474,
+            "timestamp": 1753847940.152273,
+            "view_name": "infrastructure_view1",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view1_20",
+                    "class_name": "car",
+                    "position_3d": [
+                        -3.96,
+                        15.34,
+                        -2.6
+                    ],
+                    "speed_kmh": 0.56,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view1_6",
+                            "distance_to_person": 4.34,
+                            "angle_degrees": 2.4,
+                            "direction_type": "DIRECT_APPROACH",
+                            "risk_level": "high"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_37",
+                            "distance_to_person": 3.56,
+                            "angle_degrees": 76.8,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 475,
+            "timestamp": 1753847940.4412217,
+            "view_name": "infrastructure_view1",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view1_20",
+                    "class_name": "car",
+                    "position_3d": [
+                        -3.96,
+                        15.33,
+                        -2.59
+                    ],
+                    "speed_kmh": 0.63,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view1_6",
+                            "distance_to_person": 4.33,
+                            "angle_degrees": 2.7,
+                            "direction_type": "DIRECT_APPROACH",
+                            "risk_level": "high"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_37",
+                            "distance_to_person": 3.51,
+                            "angle_degrees": 76.0,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_31",
+                            "distance_to_person": 3.8,
+                            "angle_degrees": 84.1,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 476,
+            "timestamp": 1753847940.8246732,
+            "view_name": "infrastructure_view1",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view1_20",
+                    "class_name": "car",
+                    "position_3d": [
+                        -3.97,
+                        15.34,
+                        -2.6
+                    ],
+                    "speed_kmh": 0.79,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view1_6",
+                            "distance_to_person": 4.36,
+                            "angle_degrees": 2.6,
+                            "direction_type": "DIRECT_APPROACH",
+                            "risk_level": "high"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_37",
+                            "distance_to_person": 3.49,
+                            "angle_degrees": 75.3,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_31",
+                            "distance_to_person": 3.82,
+                            "angle_degrees": 83.5,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "frame_id": 477,
+            "timestamp": 1753847941.1537862,
+            "view_name": "infrastructure_view1",
+            "vehicles": [
+                {
+                    "id": "infrastructure_view1_20",
+                    "class_name": "car",
+                    "position_3d": [
+                        -3.97,
+                        15.34,
+                        -2.59
+                    ],
+                    "speed_kmh": 0.42,
+                    "distances_to_persons": [
+                        {
+                            "person_id": "infrastructure_view1_6",
+                            "distance_to_person": 4.36,
+                            "angle_degrees": 2.4,
+                            "direction_type": "DIRECT_APPROACH",
+                            "risk_level": "high"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_37",
+                            "distance_to_person": 3.49,
+                            "angle_degrees": 75.5,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        },
+                        {
+                            "person_id": "infrastructure_view1_31",
+                            "distance_to_person": 3.78,
+                            "angle_degrees": 85.1,
+                            "direction_type": "BYPASS_MOVEMENT",
+                            "risk_level": "low"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -23,11 +23,16 @@ Thumbs.db
 
 *.pth
 *.weights
+*.engine
+*.onnx
+*.pt
 
 # 数据文件 (大文件)
 data/
 dataset/
 datasets/
+Data/
+yolo/
 *.pcd
 *.bag
 
@@ -44,11 +49,15 @@ speed_visualization_output*/
 batch_speed_visualization_output/
 batch_speed_visualization_output*/
 bsm_output/
+saved_frame/
 
 # 视频文件
 *.mp4
 *.avi
 *.mkv
+
+# 点云文件
+*.pcd
 
 # 压缩文件
 *.zip
@@ -67,3 +76,8 @@ bsm_output/
 # 临时文件
 *.tmp
 *.temp 
+
+# 配置文件
+*.whl
+V2X-Seq-SPD-Example/
+vision-0.16.0/

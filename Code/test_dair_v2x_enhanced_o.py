@@ -204,10 +204,10 @@ class V2XEnhancedCalibration:
 class V2XEnhanced3DDetector:
     """DAIR-V2X增强版3D检测器"""
     
-    def __init__(self, model_path="yolov8m-seg.pt", tracking=True, view_prefix="", use_improved_fusion=True):
+    def __init__(self, model_path="/home/nebula/RGB-LIDAR-fusion/Code/yolov8m-seg.pt", tracking=True, view_prefix="", use_improved_fusion=True):
         print(f"初始化YOLO模型: {model_path}")
         self.model = YOLO(model_path)
-        self.model.overrides['conf'] = 0.1  # 降低置信度阈值
+        self.model.overrides['conf'] = 0.5  # 降低置信度阈值
         self.model.overrides['iou'] = 0.5
         self.model.overrides['agnostic_nms'] = False
         self.model.overrides['max_det'] = 1000
@@ -289,13 +289,14 @@ class V2XEnhanced3DDetector:
         return person_vehicle_distances
     
     def process_frame_enhanced(self, frame, points, calibration, frame_id=0, fps=30) -> Dict[str, Any]:
+        a = time.time()
         """增强版帧处理，使用Code模块中的检测器和融合方法"""
         try:
             # 使用Code模块中的检测器进行处理
             objects3d_data, all_corners_3D, pts_3D, pts_2D, all_filtered_points_of_object, all_object_IDs = self.detector.process_frame(
                 frame, points, calibration, erosion_factor=25, depth_factor=20
             )
-            
+            b = time.time()
             # 初始化返回结果
             frame_result = {
                 'frame_id': frame_id,
@@ -353,7 +354,7 @@ class V2XEnhanced3DDetector:
                     }
                     
                     detection_results.append(detection_result)
-            
+            c = time.time()
             # 计算人车距离
             person_vehicle_distances = self.calculate_person_vehicle_distances(detection_results)
             
@@ -380,10 +381,9 @@ class V2XEnhanced3DDetector:
                     'avg_person_vehicle_distance': avg_distance
                 }
             })
-            
             # 生成可视化
             result_frame = self.draw_enhanced_results(frame, detection_results, person_vehicle_distances, calibration, pts_3D, pts_2D)
-            
+            d = time.time()
             # 创建BEV视图，添加错误处理
             try:
                 # 合并所有过滤的点云
@@ -407,7 +407,7 @@ class V2XEnhanced3DDetector:
                 'processed_frame': result_frame,
                 'bev_frame': bev_frame
             }
-            
+            print((b-a)*1000,"\n",(c-a)*1000,"\n",(d-a)*1000,"\n",(e-a)*1000,"\n")
             return frame_result
             
         except Exception as e:
@@ -430,6 +430,7 @@ class V2XEnhanced3DDetector:
                 },
                 'error': str(e)
             }
+            
             return frame_result
     
     def draw_enhanced_results(self, image, detection_results, person_vehicle_distances, calibration, pts_3D, pts_2D):
@@ -719,12 +720,10 @@ def process_dair_view(view_path, view_name, max_frames=100, tracking=True, show=
                 if np.any(np.isnan(points)) or np.any(np.isinf(points)):
                     valid_mask = np.isfinite(points).all(axis=1)
                     points = points[valid_mask]
-                
                 # 处理帧
                 frame_result = detector.process_frame_enhanced(
                     image, points, calibration, i, fps=10
                 )
-                
                 # 添加视角信息
                 frame_result['view_name'] = view_name
                 frame_result['image_file'] = img_file
@@ -843,10 +842,10 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="DAIR-V2X数据集增强版多视角3D检测测试")
     parser.add_argument('--infrastructure-path', type=str, 
-                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/split-infrastructure-side-test/sequence_0044",
+                       default="/home/nebula/RGB-LIDAR-fusion/V2X-Seq-SPD-Example/infrastructure-side",
                        help="基础设施侧数据路径")
     parser.add_argument('--vehicle-path', type=str,
-                       default="/mnt/disk_2/yuji/voyagepro/yolo-laidar/data/split-infrastructure-side-test/sequence_0067",
+                       default="/home/nebula/RGB-LIDAR-fusion/V2X-Seq-SPD-Example/infrastructure-side",
                        help="车辆侧数据路径")
     parser.add_argument('--max-frames', type=int, default=1000,
                        help="每个视角最大处理帧数")

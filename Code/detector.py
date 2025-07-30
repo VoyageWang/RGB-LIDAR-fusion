@@ -1,18 +1,29 @@
 import numpy as np
 from ultralytics import YOLO
 from fusion import *
+from improved_fusion import improved_lidar_camera_fusion
 from utils import *
 import open3d as o3d
+import time
+import os
+folder_name = "yolo"
+os.makedirs(folder_name,exist_ok = True)
 
 
 class YOLOv8Detector:
-    def __init__(self, model_path, tracking=False, PCA=False):
-        self.model = YOLO(model_path)
+    def __init__(self, model_path, tracking=False, PCA=False, use_improved_fusion=True):
+        self.model = YOLO("/home/nebula/RGB-LIDAR-fusion/Code/yolov8m-seg.engine")
+        self.model.overrides['conf'] = 0.5
+        self.model.overrides['iou'] = 0.5
+        self.model.overrides['agnostic_nms'] = False
+        self.model.overrides['max_det'] = 1000
         self.tracking = tracking
         self.pca = PCA
+        self.use_improved_fusion = use_improved_fusion
         self.last_ground_center_of_id = {}    
 
     def process_frame(self, frame, pts, lidar2camera, erosion_factor, depth_factor):
+        start_time = time.time()
         if self.tracking:
             results = self.model.track(
                 source=frame,
@@ -20,7 +31,8 @@ class YOLOv8Detector:
                 verbose=False,
                 show=False,
                 persist=True,
-                tracker='bytetrack.yaml'
+                tracker='bytetrack.yaml',
+                conf = 0.5
             )
         else:
             results = self.model.predict(
@@ -28,11 +40,18 @@ class YOLOv8Detector:
                 classes=[0, 1, 2, 3, 5, 6, 7],
                 verbose=False,
                 show=False,
+                save = True,
+                conf = 0.5
             )
-
+        end_time = time.time()
+        # 打印这个for用时ms级
+        print(f"处理帧用时 yolov8: {(end_time - start_time)*1000:.2f}ms")
         # Get the results from the YOLOv8-seg model
         r = results[0]
         boxes = r.boxes  # Boxes object for bbox outputs
+        if len(boxes) != 0:
+            print(boxes.id)
+            print(boxes.cls)
         masks = r.masks  # Masks object for segment masks outputs
 
         # Preprocess LiDAR point cloud - 支持不同格式
@@ -85,7 +104,8 @@ class YOLOv8Detector:
                     valid_indices = np.where(valid_mask)[0][valid_2d_mask]
                     pts_3D = point_cloud[valid_indices]
                     pts_2D = pts_2D[valid_2d_mask]
-                    print(f"投影后得到 {len(pts_3D)} 个有效的3D点")
+                    # 移除调试输出：投影统计
+                    # print(f"投影后得到 {len(pts_3D)} 个有效的3D点")
                 else:
                     pts_3D, pts_2D = np.array([]), np.array([])
                     print("投影后没有有效点")
@@ -107,6 +127,10 @@ class YOLOv8Detector:
             print("没有检测到任何目标")
             return objects3d_data, all_corners_3D, pts_3D, pts_2D, all_filtered_points_of_object, all_object_IDs
         
+        # 打印这个for用时
+        
+        start_time = time.time()
+
         for j, cls in enumerate(boxes.cls.tolist()):
             try:
                 conf = boxes.conf.tolist()[j] if boxes.conf is not None else None
@@ -120,7 +144,10 @@ class YOLOv8Detector:
                     continue
 
                 # Pass the segmentation mask to the fusion function
-                fusion_result = lidar_camera_fusion(pts_3D, pts_2D, frame, masks.xy[j], int(cls), lidar2camera, erosion_factor=erosion_factor, depth_factor=depth_factor, PCA=self.pca)
+                if self.use_improved_fusion:
+                    fusion_result = improved_lidar_camera_fusion(pts_3D, pts_2D, frame, masks.xy[j], int(cls), lidar2camera, erosion_factor=erosion_factor, depth_factor=depth_factor, PCA=self.pca)
+                else:
+                    fusion_result = lidar_camera_fusion(pts_3D, pts_2D, frame, masks.xy[j], int(cls), lidar2camera, erosion_factor=erosion_factor, depth_factor=depth_factor, PCA=self.pca)
 
                 # If the fusion is successfull, retrieve relevant bbox data (e.g. for RoboCar)
                 if fusion_result is not None:
@@ -141,8 +168,9 @@ class YOLOv8Detector:
                     if box_id in self.last_ground_center_of_id and not np.array_equal(self.last_ground_center_of_id[box_id], ROS_ground_center):
                         ROS_direction, ROS_velocity = compute_relative_object_velocity(self.last_ground_center_of_id[box_id], ROS_ground_center, time_between_frames)
                     else:
-                        ROS_direction = None
-                        ROS_velocity = None
+                        # 为第一帧或静止目标提供默认值
+                        ROS_direction = np.array([0.0, 0.0, 0.0])  # 默认朝向
+                        ROS_velocity = np.array([0.0, 0.0, 0.0])   # 静止状态
 
                     self.last_ground_center_of_id[box_id] = ROS_ground_center
 
@@ -154,8 +182,11 @@ class YOLOv8Detector:
             except Exception as e:
                 print(f"处理目标 {j} 时出错: {e}")
                 continue
-
+        
         print(f"成功处理了 {len(all_corners_3D)} 个目标")
+        end_time = time.time()
+        # 打印这个for用时ms级
+        print(f"处理帧用时 for循环融合: {(end_time - start_time)*1000:.2f}ms")
         return objects3d_data, all_corners_3D, pts_3D, pts_2D, all_filtered_points_of_object, all_object_IDs
     
     def get_IoU_results(self, frame, pts, lidar2camera, erosion_factor, depth_factor):
@@ -258,3 +289,14 @@ class YOLOv8Detector:
                 objects3d_data.append([type, ground_center, dimensions, yaw])
 
         return objects3d_data, all_corners_3D, pts_3D, pts_2D, all_filtered_points_of_object
+def compute_relative_object_velocity(ground_center_frame1, ground_center_frame2, time_between_frames):
+    # Compute displacement vector between ground centers
+    displacement = ground_center_frame2 - ground_center_frame1
+
+    # Compute relative velocity components
+    relative_velocity_x = displacement[0] / time_between_frames
+    relative_velocity_y = displacement[1] / time_between_frames
+    relative_velocity_z = displacement[2] / time_between_frames
+
+    # Return velocity vector
+    return displacement, np.array([relative_velocity_x, relative_velocity_y, relative_velocity_z])

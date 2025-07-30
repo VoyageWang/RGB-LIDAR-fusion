@@ -18,8 +18,9 @@ def improved_lidar_camera_fusion(pts_3D, pts_2D, frame, seg_mask, obj_class, lid
     解决融合失败和3D框过大的问题
     """
     
-    # 1. 改进的多边形腐蚀
-    eroded_seg = improved_erode_polygon(seg_mask, frame, erosion_factor, obj_class)
+    # 1. 改进的多边形腐蚀 - 暂时禁用腐蚀进行调试
+    eroded_seg = seg_mask  # 直接使用原始多边形
+    #eroded_seg = improved_erode_polygon(seg_mask, frame, erosion_factor, obj_class)
     
     if eroded_seg is None or len(eroded_seg) <= 2:
         print(f"  融合失败: 腐蚀后多边形太小 (类别: {obj_class})")
@@ -30,6 +31,10 @@ def improved_lidar_camera_fusion(pts_3D, pts_2D, frame, seg_mask, obj_class, lid
     
     if len(all_points_of_object) == 0:
         print(f"  融合失败: 多边形内无点云 (类别: {obj_class})")
+        print(f"    原始多边形顶点数: {len(seg_mask)}, 腐蚀后: {len(eroded_seg)}")
+        print(f"    多边形坐标范围: x=[{eroded_seg[:, 0].min():.1f}-{eroded_seg[:, 0].max():.1f}], y=[{eroded_seg[:, 1].min():.1f}-{eroded_seg[:, 1].max():.1f}]")
+        print(f"    图像尺寸: {frame.shape[:2]}")
+        print(f"    总投影点数: {len(pts_2D)}")
         return None
     
     # 3. 改进的深度聚类过滤
@@ -124,6 +129,11 @@ def extract_points_in_polygon(pts_3D, pts_2D, polygon, frame):
     """
     提取多边形内的点云，添加边界检查
     """
+    # 调试信息
+    # 移除调试输出
+    # print(f"    [DEBUG] 多边形点数: {len(polygon)}")
+    # print(f"    [DEBUG] 3D点数: {len(pts_3D)}, 2D点数: {len(pts_2D)}")
+    
     # 创建多边形掩码
     mask = np.zeros_like(frame[:, :, 0], dtype=np.uint8)
     cv2.fillPoly(mask, [polygon.astype(np.int32)], color=1)
@@ -147,6 +157,9 @@ def extract_points_in_polygon(pts_3D, pts_2D, polygon, frame):
     
     # 使用掩码筛选多边形内的点
     inside_mask_indices = mask[valid_pts_2D[:, 1], valid_pts_2D[:, 0]] == 1
+    
+    # 移除调试输出
+    # print(f"    [DEBUG] 有效点数: {len(valid_pts_3D)}, 多边形内点数: {np.sum(inside_mask_indices)}")
     
     return valid_pts_3D[inside_mask_indices]
 
