@@ -353,18 +353,11 @@ class StreamV2XDetector:
     
     def __init__(self, model_path="yolov8m-seg.pt", tracking=True, view_prefix=""):
         print(f"初始化YOLO模型: {model_path}")
-        self.model = YOLO(model_path)
-        self.model.overrides['conf'] = 0.5
-        self.model.overrides['iou'] = 0.5
-        self.model.overrides['agnostic_nms'] = False
-        self.model.overrides['max_det'] = 1000
-        
-        # 创建基于Code模块的检测器
         self.detector = YOLOv8Detector(model_path, tracking=tracking, PCA=False)
         
         self.tracking = tracking
         self.view_prefix = view_prefix
-        self.names = self.model.names
+        self.names = self.detector.model.names
         
         # 类别定义
         self.person_classes = [0]  # person
@@ -475,9 +468,9 @@ class StreamV2XDetector:
                     
                     person_vehicle_distances.append({
                         'person_id': person['id'],
-                        'person_class': self.model.names[person['class']],
+                        'person_class': self.names[person['class']],
                         'vehicle_id': vehicle['id'],
-                        'vehicle_class': self.model.names[vehicle['class']],
+                        'vehicle_class': self.names[vehicle['class']],
                         'distance_xy': distance_xy,
                         'angle_degrees': round(angle_degrees, 2),
                         'direction_type': direction_type,
@@ -539,7 +532,7 @@ class StreamV2XDetector:
                     detection_result = {
                         'id': unique_id,
                         'class': ROS_type,
-                        'class_name': self.model.names[ROS_type],
+                        'class_name': self.names[ROS_type],
                         'confidence': 0.5,
                         'corners_3D': safe_to_list(corners_3D),
                         'center_3d': safe_to_list(center_3d),
