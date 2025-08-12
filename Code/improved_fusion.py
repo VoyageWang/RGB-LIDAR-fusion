@@ -56,9 +56,9 @@ def improved_lidar_camera_fusion(pts_3D, pts_2D, frame, seg_mask, obj_class, lid
         return None
     
     # 5. 边界框合理性检查
-    if not is_bbox_reasonable(bbox_corners_3D, obj_class):
-        print(f"  融合失败: 3D边界框不合理 (类别: {obj_class})")
-        return None
+    # if not is_bbox_reasonable(bbox_corners_3D, obj_class):
+    #     print(f"  融合失败: 3D边界框不合理 (类别: {obj_class})")
+    #     return None
     
     return filtered_points_of_object, bbox_corners_3D, yaw
 
