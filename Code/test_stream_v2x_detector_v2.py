@@ -362,6 +362,19 @@ class StreamV2XDetector:
         # 类别定义
         self.person_classes = [0]  # person
         self.vehicle_classes = [1, 2, 3, 5, 6, 7]  # bicycle, car, motorcycle, bus, truck
+        self.frame_result = {
+                'frame_id': None,
+                'timestamp': time.time(),
+                'detections': [],
+                'person_vehicle_distances': [],
+                'statistics': {
+                    'total_objects': 0,
+                    'person_count': 0,
+                    'vehicle_count': 0,
+                    'min_person_vehicle_distance': None,
+                    'avg_person_vehicle_distance': None
+                }
+            }
     
     def _get_safe_depth_factor(self, depth_factor):
         """获取安全的depth_factor值"""
@@ -493,19 +506,7 @@ class StreamV2XDetector:
             )
             
             # 数据结构初始化
-            frame_result = {
-                'frame_id': frame_id,
-                'timestamp': time.time(),
-                'detections': [],
-                'person_vehicle_distances': [],
-                'statistics': {
-                    'total_objects': 0,
-                    'person_count': 0,
-                    'vehicle_count': 0,
-                    'min_person_vehicle_distance': None,
-                    'avg_person_vehicle_distance': None
-                }
-            }
+            
             
             # 检测结果转换
             detection_results = []
@@ -529,6 +530,7 @@ class StreamV2XDetector:
                         speed_3d_kmh = speed_ms * 3.6
                     
                     # 构建检测结果
+                    # 优化：不保存完整的点云数据，只保存统计信息以减少内存和序列化开销
                     detection_result = {
                         'id': unique_id,
                         'class': ROS_type,
@@ -539,7 +541,7 @@ class StreamV2XDetector:
                         'dimensions_3d': safe_to_list(dimensions_3d),
                         'distance_from_origin': distance_from_origin,
                         'speed_3d_kmh': speed_3d_kmh,
-                        'filtered_points': safe_to_list(filtered_points) if len(filtered_points) > 0 else [],
+                        'filtered_points_count': len(filtered_points) if len(filtered_points) > 0 else 0,  # 只保存数量，不保存完整点云
                         'yaw': 0.0
                     }
                     
@@ -560,7 +562,8 @@ class StreamV2XDetector:
                 avg_distance = sum(distances) / len(distances)
             
             # 更新结果
-            frame_result.update({
+            self.frame_result.update({
+                'frame_id': frame_id,
                 'detections': detection_results,
                 'person_vehicle_distances': person_vehicle_distances,
                 'statistics': {
@@ -574,15 +577,15 @@ class StreamV2XDetector:
             
             # 计算处理时间
             total_time = time.time() - frame_start_time
-            frame_result['processing_time'] = total_time
+            self.frame_result['processing_time'] = total_time
             
-            return frame_result
+            return self.frame_result
             
         except Exception as e:
             total_time = time.time() - frame_start_time
             print(f"处理帧 {frame_id} 时出错 (耗时 {total_time*1000:.1f}ms): {e}")
             
-            frame_result = {
+            self.frame_result = {
                 'frame_id': frame_id,
                 'timestamp': time.time(),
                 'detections': [],
@@ -597,7 +600,7 @@ class StreamV2XDetector:
                 'processing_time': total_time,
                 'error': str(e)
             }
-            return frame_result
+            return self.frame_result
 
 
 class StreamProcessor:
@@ -754,9 +757,11 @@ class StreamProcessor:
                     frame_result['lidar_ip'] = self.lidar_ip
                     frame_result['frame_timestamp'] = frame_timestamp
                     
-                    # 获取当前帧的精简结果并打印
+                    # 获取当前帧的精简结果并打印（优化：减少打印频率以降低延迟）
+                    # 注意：simplify_results_for_json仍需要计算用于全局结果更新
                     current_frame_simplified = simplify_results_for_json([frame_result])
-                    print(current_frame_simplified)
+                    if frame_id % 5 == 0:  # 每5帧打印一次，而不是每帧（减少I/O延迟）
+                        print(current_frame_simplified)
                     
                     # 更新全局结果队列
                     if current_frame_simplified:
